@@ -54,3 +54,37 @@ func NewEntry(spec string, cmd func()) *Entry {
 
 	return entry
 }
+
+// Return an Int with the bits set representing all of the times that the field represents.
+// A "field" is a comma-separated list of "ranges".
+func getField(field string, r Range) uint64 {
+	// list = range {"," range}
+	var bits uint64
+	ranges := strings.FieldsFunc(field, func(r rune) bool { return r == ',' }
+	for _, expr := range ranges {
+		bits |= getRange(expr, r)
+	}
+	return bits;
+}
+
+func getRange(expr string, r Range) uint64 {
+	// number | number "-" number [ "/" number ]
+	var start, end, step uint
+	rangeAndStep := strings.Split(expr, "/")
+	lowAndHigh := strings.Split(rangeAndStep[0], "-")
+
+	if lowAndHigh[0] == "*" {
+		start = r.min
+		end = r.max
+	} else {
+		start = mustParseInt(lowAndHigh[0])
+		switch len(lowAndHigh) {
+		case 1:
+			end = start
+		case 2:
+			end = mustParseInt(lowAndHigh[1])
+		default:
+			log.Panicf("Too many commas: %s", expr)
+		}
+	}
+}
