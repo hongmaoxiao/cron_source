@@ -2,6 +2,8 @@ package cron
 
 import (
 	"log"
+	"math"
+	"strconv"
 	"strings"
 )
 
@@ -87,4 +89,112 @@ func getRange(expr string, r Range) uint64 {
 			log.Panicf("Too many commas: %s", expr)
 		}
 	}
+
+	switch len(rangeAndStep) {
+	case 1:
+		step = 1
+	case 2:
+		step = mustParseInt(rangeAndStep[1])
+	default:
+		log.Panicf("Too many slashes: %s", expr)
+	}
+
+	if start < r.min {
+		log.Panicf("Beginning of range (%d) below minimum (%d): %s", start, r.min, expr)
+	}
+	if end > r.max {
+		log.Panicf("End of range (%d) above maximum (%d): %s", end, r.max, expr)
+	}
+	if start > end {
+		log.Panicf("Beginning of range (%d) beyond end of range (%d): %s", start, end, expr)
+	}
+
+	return getBits(start, end, step)
+}
+
+func mustParseInt(expr string) uint {
+	num, err := strconv.Atoi(expr)
+	if err != nil {
+		log.Panicf("Failed to parse int from %s: %s", expr, err)
+	}
+	if num < 0 {
+		log.Panicf("Negative number (%d) not allowed: %s", num, expr)
+	}
+
+	return uint(num)
+}
+
+func getBits(min, max, step uint) uint64 {
+	var bits uint64
+
+	// If step is 1, use shifts.
+	if step == 1 {
+		return ^(math.MaxUint64 << (max + 1)) & (math.MaxUint64 << min)
+	}
+
+	// Else, use a simple loop.
+	for i := min; i <= max; i+= step {
+		bits |= 1 << i
+	}
+	return bits
+}
+
+func all(r Range) uint64 {
+	return getBits(r.min, r.max, 1)
+}
+
+func first(r Range) uint64 {
+	return getBits(r.min, r.min, 1)
+}
+
+func parseDescriptor(spec string) *Entry {
+	switch spec {
+	case "@yearly", "@annually":
+		return &Entry{
+			Minute: 1 << minutes.min,
+			Hour: 1 << hours.min,
+			Dom: 1 << dom.min,
+			Month: 1 << months.min,
+			Dow: all(dow),
+		}
+
+	case "@monthly":
+		return &Entry{
+			Minute: 1 << minutes.min,
+			Hour: 1 << hours.min,
+			Dom: 1 << dom.min,
+			Month: all(months),
+			Dow: all(dow),
+		}
+
+	case "@weekly":
+		return &Entry{
+			Minute: 1 << minutes.min,
+			Hour: 1 << hours.min,
+			Dom: all(dom),
+			Month: all(months),
+			Dow: 1 << dow.min,
+		}
+
+	case "@daily", "@midnight":
+		return &Entry{
+			Minute: 1 << minutes.min,
+			Hour: 1 << hours.min,
+			Dom: all(dom),
+			Month: all(months),
+			Dow: all(dow),
+		}
+
+	case "@hourly":
+		return &Entry{
+			Minute: 1 << minutes.min,
+			Hour: all(hours),
+			Dom: all(dom),
+			Month: all(months),
+			Dow: all(dow),
+		}
+	}
+
+	log.Panicf("Unrecognized descriptor: %s", spec)
+	return nil
 }
