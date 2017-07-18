@@ -62,11 +62,11 @@ func NewEntry(spec string, cmd func()) *Entry {
 func getField(field string, r Range) uint64 {
 	// list = range {"," range}
 	var bits uint64
-	ranges := strings.FieldsFunc(field, func(r rune) bool { return r == ',' }
+	ranges := strings.FieldsFunc(field, func(r rune) bool { return r == ',' })
 	for _, expr := range ranges {
 		bits |= getRange(expr, r)
 	}
-	return bits;
+	return bits
 }
 
 func getRange(expr string, r Range) uint64 {
@@ -133,7 +133,7 @@ func getBits(min, max, step uint) uint64 {
 	}
 
 	// Else, use a simple loop.
-	for i := min; i <= max; i+= step {
+	for i := min; i <= max; i += step {
 		bits |= 1 << i
 	}
 	return bits
@@ -152,46 +152,46 @@ func parseDescriptor(spec string) *Entry {
 	case "@yearly", "@annually":
 		return &Entry{
 			Minute: 1 << minutes.min,
-			Hour: 1 << hours.min,
-			Dom: 1 << dom.min,
-			Month: 1 << months.min,
-			Dow: all(dow),
+			Hour:   1 << hours.min,
+			Dom:    1 << dom.min,
+			Month:  1 << months.min,
+			Dow:    all(dow),
 		}
 
 	case "@monthly":
 		return &Entry{
 			Minute: 1 << minutes.min,
-			Hour: 1 << hours.min,
-			Dom: 1 << dom.min,
-			Month: all(months),
-			Dow: all(dow),
+			Hour:   1 << hours.min,
+			Dom:    1 << dom.min,
+			Month:  all(months),
+			Dow:    all(dow),
 		}
 
 	case "@weekly":
 		return &Entry{
 			Minute: 1 << minutes.min,
-			Hour: 1 << hours.min,
-			Dom: all(dom),
-			Month: all(months),
-			Dow: 1 << dow.min,
+			Hour:   1 << hours.min,
+			Dom:    all(dom),
+			Month:  all(months),
+			Dow:    1 << dow.min,
 		}
 
 	case "@daily", "@midnight":
 		return &Entry{
 			Minute: 1 << minutes.min,
-			Hour: 1 << hours.min,
-			Dom: all(dom),
-			Month: all(months),
-			Dow: all(dow),
+			Hour:   1 << hours.min,
+			Dom:    all(dom),
+			Month:  all(months),
+			Dow:    all(dow),
 		}
 
 	case "@hourly":
 		return &Entry{
 			Minute: 1 << minutes.min,
-			Hour: all(hours),
-			Dom: all(dom),
-			Month: all(months),
-			Dow: all(dow),
+			Hour:   all(hours),
+			Dom:    all(dom),
+			Month:  all(months),
+			Dow:    all(dow),
 		}
 	}
 
