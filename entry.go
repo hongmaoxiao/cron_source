@@ -1,6 +1,7 @@
 package cron
 
 import (
+	"fmt"
 	"log"
 	"math"
 	"strconv"
@@ -72,8 +73,12 @@ func getField(field string, r Range) uint64 {
 func getRange(expr string, r Range) uint64 {
 	// number | number "-" number [ "/" number ]
 	var start, end, step uint
+	fmt.Println("expr: ", expr)
+	fmt.Println("range ", r)
 	rangeAndStep := strings.Split(expr, "/")
+	fmt.Println("rangeAndStep: ", rangeAndStep)
 	lowAndHigh := strings.Split(rangeAndStep[0], "-")
+	fmt.Println("---: ", lowAndHigh)
 
 	if lowAndHigh[0] == "*" {
 		start = r.min
@@ -98,6 +103,7 @@ func getRange(expr string, r Range) uint64 {
 	default:
 		log.Panicf("Too many slashes: %s", expr)
 	}
+	fmt.Println("max ", start, end, step, r.min, r.max)
 
 	if start < r.min {
 		log.Panicf("Beginning of range (%d) below minimum (%d): %s", start, r.min, expr)
@@ -129,6 +135,9 @@ func getBits(min, max, step uint) uint64 {
 
 	// If step is 1, use shifts.
 	if step == 1 {
+		// fmt.Println("getBits: ", math.MaxUint64)
+		fmt.Println("get1: ", ^1)
+		// fmt.Println("get2: ", math.MaxUint64)
 		return ^(math.MaxUint64 << (max + 1)) & (math.MaxUint64 << min)
 	}
 
