@@ -89,6 +89,7 @@ func getRange(expr string, r Range) uint64 {
 		case 1:
 			end = start
 		case 2:
+			fmt.Println("case 2: ", lowAndHigh[1])
 			end = mustParseInt(lowAndHigh[1])
 		default:
 			log.Panicf("Too many commas: %s", expr)
@@ -135,9 +136,12 @@ func getBits(min, max, step uint) uint64 {
 
 	// If step is 1, use shifts.
 	if step == 1 {
-		// fmt.Println("getBits: ", math.MaxUint64)
-		fmt.Println("get1: ", ^1)
-		// fmt.Println("get2: ", math.MaxUint64)
+		// fmt.Println("hhhhh: ", uint64(^(math.MaxUint64<<(max+1))&(math.MaxUint64<<min)))
+		// fmt.Printf("%08b [B]\n", uint64(^(math.MaxUint64<<(max+1))&(math.MaxUint64<<min)))
+		// fmt.Println("res: ", ^(math.MaxUint64<<(max+1))&(math.MaxUint64<<min))
+		fmt.Printf("%08b [BB]\n", ^(1<<(max+1))&(1<<min))
+		fmt.Printf("%08b [BB]\n", uint64(^(1<<(max+1))&(1<<min)))
+		fmt.Printf("%v [VV]\n", ^(1<<(max+1))&(1<<min))
 		return ^(math.MaxUint64 << (max + 1)) & (math.MaxUint64 << min)
 	}
 
@@ -145,6 +149,7 @@ func getBits(min, max, step uint) uint64 {
 	for i := min; i <= max; i += step {
 		bits |= 1 << i
 	}
+	fmt.Println("bits: ", bits)
 	return bits
 }
 
