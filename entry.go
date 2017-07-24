@@ -35,6 +35,7 @@ func NewEntry(spec string, cmd func()) *Entry {
 	// Split on whitespace.  We require 4 or 5 fields.
 	// (minute) (hour) (day of month) (month) (day of week, optional)
 	fields := strings.Fields(spec)
+	fmt.Println("fields: ", fields)
 	if len(fields) != 4 && len(fields) != 5 {
 		log.Panicf("Expected 4 or 5 fields, found %d: %s", len(fields), spec)
 	}
@@ -46,8 +47,13 @@ func NewEntry(spec string, cmd func()) *Entry {
 		Month:  getField(fields[3], months),
 		Func:   cmd,
 	}
+	fmt.Println("entry: ", entry)
 	if len(fields) == 5 {
 		entry.Dow = getField(fields[4], dow)
+		fmt.Println("entry.Dow: ", entry)
+		fmt.Printf("%16b [BB]\n", entry.Dow)
+		fmt.Printf("%16b [BBB]\n", entry.Dow&1)
+		fmt.Println("1&7: ", entry.Dow&1|entry.Dow&1<<7)
 
 		// If either bit 0 or 7 are set, set both.  (both accepted as Sunday)
 		if entry.Dow&1|entry.Dow&1<<7 > 0 {
@@ -63,7 +69,9 @@ func NewEntry(spec string, cmd func()) *Entry {
 func getField(field string, r Range) uint64 {
 	// list = range {"," range}
 	var bits uint64
+	fmt.Println("field: ", field)
 	ranges := strings.FieldsFunc(field, func(r rune) bool { return r == ',' })
+	fmt.Println("ranges: ", ranges)
 	for _, expr := range ranges {
 		bits |= getRange(expr, r)
 	}
@@ -136,20 +144,22 @@ func getBits(min, max, step uint) uint64 {
 
 	// If step is 1, use shifts.
 	if step == 1 {
-		// fmt.Println("hhhhh: ", uint64(^(math.MaxUint64<<(max+1))&(math.MaxUint64<<min)))
-		// fmt.Printf("%08b [B]\n", uint64(^(math.MaxUint64<<(max+1))&(math.MaxUint64<<min)))
-		// fmt.Println("res: ", ^(math.MaxUint64<<(max+1))&(math.MaxUint64<<min))
-		fmt.Printf("%08b [BB]\n", ^(1<<(max+1))&(1<<min))
-		fmt.Printf("%08b [BB]\n", uint64(^(1<<(max+1))&(1<<min)))
-		fmt.Printf("%v [VV]\n", ^(1<<(max+1))&(1<<min))
+		fmt.Printf("max: %v, min: %v\n", max, min)
+		fmt.Printf("%64b [^maxB]\n", uint64(^(math.MaxUint64 << (max + 1))))
+		fmt.Printf("%64b [minB]\n", uint64(math.MaxUint64<<min))
+		fmt.Printf("%08b [BBBBBB]\n", uint64(^(math.MaxUint64<<(max+1))&(math.MaxUint64<<min)))
+		fmt.Printf("%v [uint64]\n\n", uint64(^(math.MaxUint64<<(max+1))&(math.MaxUint64<<min)))
 		return ^(math.MaxUint64 << (max + 1)) & (math.MaxUint64 << min)
 	}
 
 	// Else, use a simple loop.
 	for i := min; i <= max; i += step {
+		fmt.Println("iiiii: ", i)
+		fmt.Printf("%08b [bitsBB]\n", uint64(bits))
 		bits |= 1 << i
 	}
 	fmt.Println("bits: ", bits)
+	fmt.Println()
 	return bits
 }
 
