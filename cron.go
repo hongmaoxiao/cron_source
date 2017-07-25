@@ -14,7 +14,7 @@ type Cron struct {
 
 // A cron entry consists of a schedule and the func to execute on that schedule.
 type Entry struct {
-	*schedule
+	*Schedule
 	Func func()
 }
 

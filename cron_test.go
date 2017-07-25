@@ -1,6 +1,9 @@
 package cron
 
-import "testing"
+import (
+	"testing"
+	"time"
+)
 
 func TestActivation(t *testing.T) {
 	tests := []struct {
@@ -10,7 +13,7 @@ func TestActivation(t *testing.T) {
 		// Every fifteen minutes.
 		{"Mon Jul 9 15:00 2012", "0 0/15 * * *", true},
 		{"Mon Jul 9 15:45 2012", "0 0/15 * * *", true},
-		{"Mon Jul 9 15:40 2012", "0 0/15 * * *", true},
+		{"Mon Jul 9 15:40 2012", "0 0/15 * * *", false},
 
 		// Every fifteen minutes, starting at 5 minutes.
 		{"Mon Jul 9 15:05 2012", "0 5/15 * * *", true},
@@ -41,7 +44,7 @@ func TestActivation(t *testing.T) {
 		// Test interaction of DOW and DOM.
 		// If both are specified, then only one needs to match.
 		{"Sun Jul 15 00:00 2012", "0 * * 1,15 * Sun", true},
-		{"Fri Jul 15 00:00 2012", "0 * * 1,15 * Sun", true},
+		{"Fri Jun 15 00:00 2012", "0 * * 1,15 * Sun", true},
 		{"Wed Aug 1 00:00 2012", "0 * * 1,15 * Sun", true},
 
 		// However, if one has a star, then both need to match.
@@ -52,11 +55,10 @@ func TestActivation(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		actual := matches(getTime(test.time), Parse(tets.spec))
+		actual := matches(getTime(test.time), Parse(test.spec))
 		if test.expected != actual {
-			t.Logf("Actual Minutes mask: %b", Parse(test.spec).Minute
-			t.Errorf("Fail evaluating %s on %s: (expected) %t != %t (actual)",
-                test.spec, test.time, test.expected, actual)
+			t.Logf("Actual Minutes mask: %b", Parse(test.spec).Minute)
+			t.Errorf("Fail evaluating %s on %s: (expected) %t != %t (actual)", test.spec, test.time, test.expected, actual)
 		}
 	}
 }

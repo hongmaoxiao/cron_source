@@ -8,65 +8,94 @@ import (
 	"strings"
 )
 
-type Entry struct {
-	Minute, Hour, Dom, Month, Dow uint64
-	Func                          func()
+// A cron schedule that specifies a duty cycle (to the second granularity).
+// Schedules are computed initially and stored as bit sets.
+type Schedule struct {
+	Second, Minute, Hour, Dom, Month, Dow uint64
 }
 
-type Range struct{ min, max uint }
+// A range of acceptable values.
+type bounds struct {
+	min, max uint
+	names    map[string]uint
+}
 
+// The bounds for each field.
 var (
-	minutes = Range{0, 59}
-	hours   = Range{0, 23}
-	dom     = Range{1, 31}
-	months  = Range{1, 12}
-	dow     = Range{0, 7}
+	seconds = bounds{0, 59, nil}
+	minutes = bounds{0, 59, nil}
+	hours   = bounds{0, 23, nil}
+	dom     = bounds{1, 31, nil}
+	months  = bounds{1, 12, map[string]uint{
+		"jan": 1,
+		"feb": 2,
+		"mar": 3,
+		"apr": 4,
+		"may": 5,
+		"jun": 6,
+		"jul": 7,
+		"aug": 8,
+		"sep": 9,
+		"oct": 10,
+		"nov": 11,
+		"dec": 12,
+	}}
+	dow = bounds{0, 7, map[string]uint{
+		"sun": 0,
+		"mon": 1,
+		"tue": 2,
+		"wed": 3,
+		"thu": 4,
+		"fri": 5,
+		"sat": 6,
+	}}
+)
+
+const (
+	// Set the top bit if a star was included in the expression.
+	STAR_BIT = 1 << 63
 )
 
 // Returns a new crontab entry representing the given spec.
 // Panics with a descriptive error if the spec is not valid.
-func NewEntry(spec string, cmd func()) *Entry {
+func Parse(spec string) *Schedule {
 	if spec[0] == '@' {
-		entry := parseDescriptor(spec)
-		entry.Func = cmd
-		return entry
+		return parseDescriptor(spec)
 	}
 
 	// Split on whitespace.  We require 4 or 5 fields.
 	// (minute) (hour) (day of month) (month) (day of week, optional)
 	fields := strings.Fields(spec)
 	fmt.Println("fields: ", fields)
-	if len(fields) != 4 && len(fields) != 5 {
+	if len(fields) != 5 && len(fields) != 6 {
 		log.Panicf("Expected 4 or 5 fields, found %d: %s", len(fields), spec)
 	}
 
-	entry := &Entry{
-		Minute: getField(fields[0], minutes),
-		Hour:   getField(fields[1], hours),
-		Dom:    getField(fields[2], dom),
-		Month:  getField(fields[3], months),
-		Func:   cmd,
-	}
-	fmt.Println("entry: ", entry)
+	// If a fifth field is not provided (DayOfWeek), then it is equivalent to star.
 	if len(fields) == 5 {
-		entry.Dow = getField(fields[4], dow)
-		fmt.Println("entry.Dow: ", entry)
-		fmt.Printf("%16b [BB]\n", entry.Dow)
-		fmt.Printf("%16b [BBB]\n", entry.Dow&1)
-		fmt.Println("1&7: ", entry.Dow&1|entry.Dow&1<<7)
-
-		// If either bit 0 or 7 are set, set both.  (both accepted as Sunday)
-		if entry.Dow&1|entry.Dow&1<<7 > 0 {
-			entry.Dow = entry.Dow | 1 | 1<<7
-		}
+		fields = append(fields, "*")
 	}
 
-	return entry
+	schedule := &Entry{
+		Second: getField(fields[0], seconds),
+		Minute: getField(fields[1], minutes),
+		Hour:   getField(fields[2], hours),
+		Dom:    getField(fields[3], dom),
+		Month:  getField(fields[4], months),
+		Dow:    getField(fields[5], dow),
+	}
+
+	// If either bit 0 or 7 are set, set both.  (both accepted as Sunday)
+	if 1&schedule.Dow|1<<7&schedule.Dow > 0 {
+		schedule.Dow = schedule.Dow | 1 | 1<<7
+	}
+
+	return schedule
 }
 
 // Return an Int with the bits set representing all of the times that the field represents.
 // A "field" is a comma-separated list of "ranges".
-func getField(field string, r Range) uint64 {
+func getField(field string, r bounds) uint64 {
 	// list = range {"," range}
 	var bits uint64
 	fmt.Println("field: ", field)
@@ -78,15 +107,14 @@ func getField(field string, r Range) uint64 {
 	return bits
 }
 
-func getRange(expr string, r Range) uint64 {
+func getRange(expr string, r bounds) uint64 {
 	// number | number "-" number [ "/" number ]
-	var start, end, step uint
-	fmt.Println("expr: ", expr)
-	fmt.Println("range ", r)
-	rangeAndStep := strings.Split(expr, "/")
-	fmt.Println("rangeAndStep: ", rangeAndStep)
-	lowAndHigh := strings.Split(rangeAndStep[0], "-")
-	fmt.Println("---: ", lowAndHigh)
+	var (
+		start, end, step uint
+		rangeAndStep     = strings.Split(expr, "/")
+		lowAndHigh       = strings.Split(rangeAndStep, "-")
+		singleDigit      = len(lowAndHigh) == 1
+	)
 
 	if lowAndHigh[0] == "*" {
 		start = r.min
