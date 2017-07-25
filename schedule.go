@@ -56,7 +56,7 @@ const (
 	STAR_BIT = 1 << 63
 )
 
-// Returns a new crontab entry representing the given spec.
+// Returns a new crontab schedule representing the given spec.
 // Panics with a descriptive error if the spec is not valid.
 func Parse(spec string) *Schedule {
 	if spec[0] == '@' {
@@ -68,7 +68,7 @@ func Parse(spec string) *Schedule {
 	fields := strings.Fields(spec)
 	fmt.Println("fields: ", fields)
 	if len(fields) != 5 && len(fields) != 6 {
-		log.Panicf("Expected 4 or 5 fields, found %d: %s", len(fields), spec)
+		log.Panicf("Expected 5 or 6 fields, found %d: %s", len(fields), spec)
 	}
 
 	// If a fifth field is not provided (DayOfWeek), then it is equivalent to star.
@@ -76,7 +76,7 @@ func Parse(spec string) *Schedule {
 		fields = append(fields, "*")
 	}
 
-	schedule := &Entry{
+	schedule := &Schedule{
 		Second: getField(fields[0], seconds),
 		Minute: getField(fields[1], minutes),
 		Hour:   getField(fields[2], hours),
@@ -112,23 +112,25 @@ func getRange(expr string, r bounds) uint64 {
 	var (
 		start, end, step uint
 		rangeAndStep     = strings.Split(expr, "/")
-		lowAndHigh       = strings.Split(rangeAndStep, "-")
+		lowAndHigh       = strings.Split(rangeAndStep[0], "-")
 		singleDigit      = len(lowAndHigh) == 1
 	)
 
-	if lowAndHigh[0] == "*" {
+	var extra_star uint64
+	if lowAndHigh[0] == "*" || lowAndHigh[0] == "?" {
 		start = r.min
 		end = r.max
+		extra_star = STAR_BIT
 	} else {
-		start = mustParseInt(lowAndHigh[0])
+		start = parseIntOrName(lowAndHigh[0], r.names)
 		switch len(lowAndHigh) {
 		case 1:
 			end = start
 		case 2:
 			fmt.Println("case 2: ", lowAndHigh[1])
-			end = mustParseInt(lowAndHigh[1])
+			end = parseIntOrName(lowAndHigh[1], r.names)
 		default:
-			log.Panicf("Too many commas: %s", expr)
+			log.Panicf("Too many hyphens: %s", expr)
 		}
 	}
 
@@ -137,6 +139,11 @@ func getRange(expr string, r bounds) uint64 {
 		step = 1
 	case 2:
 		step = mustParseInt(rangeAndStep[1])
+
+		// Special handling: "N/step" means "N-max/step".
+		if singleDigit {
+			end = r.max
+		}
 	default:
 		log.Panicf("Too many slashes: %s", expr)
 	}
@@ -152,7 +159,16 @@ func getRange(expr string, r bounds) uint64 {
 		log.Panicf("Beginning of range (%d) beyond end of range (%d): %s", start, end, expr)
 	}
 
-	return getBits(start, end, step)
+	return getBits(start, end, step) | extra_star
+}
+
+func parseIntOrName(expr string, names map[string]uint) uint {
+	if names != nil {
+		if namedInt, ok := names[strings.ToLower(expr)]; ok {
+			return namedInt
+		}
+	}
+	return mustParseInt(expr)
 }
 
 func mustParseInt(expr string) uint {
@@ -191,18 +207,19 @@ func getBits(min, max, step uint) uint64 {
 	return bits
 }
 
-func all(r Range) uint64 {
-	return getBits(r.min, r.max, 1)
+func all(r bounds) uint64 {
+	return getBits(r.min, r.max, 1) | STAR_BIT
 }
 
-func first(r Range) uint64 {
+func first(r bounds) uint64 {
 	return getBits(r.min, r.min, 1)
 }
 
-func parseDescriptor(spec string) *Entry {
+func parseDescriptor(spec string) *Schedule {
 	switch spec {
 	case "@yearly", "@annually":
-		return &Entry{
+		return &Schedule{
+			Second: 1 << seconds.min,
 			Minute: 1 << minutes.min,
 			Hour:   1 << hours.min,
 			Dom:    1 << dom.min,
@@ -211,7 +228,8 @@ func parseDescriptor(spec string) *Entry {
 		}
 
 	case "@monthly":
-		return &Entry{
+		return &Schedule{
+			Second: 1 << seconds.min,
 			Minute: 1 << minutes.min,
 			Hour:   1 << hours.min,
 			Dom:    1 << dom.min,
@@ -220,7 +238,8 @@ func parseDescriptor(spec string) *Entry {
 		}
 
 	case "@weekly":
-		return &Entry{
+		return &Schedule{
+			Second: 1 << seconds.min,
 			Minute: 1 << minutes.min,
 			Hour:   1 << hours.min,
 			Dom:    all(dom),
@@ -229,7 +248,8 @@ func parseDescriptor(spec string) *Entry {
 		}
 
 	case "@daily", "@midnight":
-		return &Entry{
+		return &Schedule{
+			Second: 1 << seconds.min,
 			Minute: 1 << minutes.min,
 			Hour:   1 << hours.min,
 			Dom:    all(dom),
@@ -238,7 +258,8 @@ func parseDescriptor(spec string) *Entry {
 		}
 
 	case "@hourly":
-		return &Entry{
+		return &Schedule{
+			Second: 1 << seconds.min,
 			Minute: 1 << minutes.min,
 			Hour:   all(hours),
 			Dom:    all(dom),
