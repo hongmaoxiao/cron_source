@@ -1,6 +1,8 @@
 package cron
 
-import "time"
+import (
+	"time"
+)
 
 // A cron schedule that specifies a duty cycle (to the second granularity).
 // Schedules are computed initially and stored as bit sets.
@@ -34,7 +36,7 @@ var (
 		"nov": 11,
 		"dec": 12,
 	}}
-	dow = bounds{0, 7, map[string]uint{
+	dow = bounds{0, 6, map[string]uint{
 		"sun": 0,
 		"mon": 1,
 		"tue": 2,
@@ -77,7 +79,7 @@ WRAP:
 
 	// Find the first applicable month.
 	// If it's this month, then do nothing.
-	if 1<<uint(t.Month())&s.Month == 0 {
+	for 1<<uint(t.Month())&s.Month == 0 {
 		// If we have to add a month, reset the other parts to 0.
 		if !added {
 			added = true
@@ -92,4 +94,66 @@ WRAP:
 		}
 	}
 
+	// Now get a day in that month.
+	for !dayMatches(s, t) {
+		if !added {
+			added = true
+			t = time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
+		}
+		t = t.AddDate(0, 0, 1)
+
+		if t.Day() == 1 {
+			goto WRAP
+		}
+	}
+
+	for 1<<uint(t.Hour())&s.Hour == 0 {
+		if !added {
+			added = true
+			t = time.Date(t.Year(), t.Month(), t.Day(), t.Hour(), 0, 0, 0, t.Location())
+		}
+		t = t.Add(1 * time.Hour)
+
+		if t.Hour() == 0 {
+			goto WRAP
+		}
+	}
+
+	for 1<<uint(t.Minute())&s.Minute == 0 {
+		if !added {
+			added = true
+			t = time.Date(t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), 0, 0, t.Location())
+		}
+		t = t.Add(1 * time.Minute)
+
+		if t.Minute() == 0 {
+			goto WRAP
+		}
+	}
+
+	for 1<<uint(t.Second())&s.Second == 0 {
+		if !added {
+			added = true
+			t = time.Date(t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second(), 0, t.Location())
+		}
+		t = t.Add(1 * time.Second)
+
+		if t.Second() == 0 {
+			goto WRAP
+		}
+	}
+
+	return t
+}
+
+func dayMatches(s *Schedule, t time.Time) bool {
+	var (
+		domMatch bool = 1<<uint(t.Day())&s.Dom > 0
+		dowMatch bool = 1<<uint(t.Weekday())&s.Dow > 0
+	)
+
+	if s.Dom&STAR_BIT > 0 || s.Dow&STAR_BIT > 0 {
+		return domMatch && dowMatch
+	}
+	return domMatch || dowMatch
 }

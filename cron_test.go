@@ -52,21 +52,32 @@ func TestActivation(t *testing.T) {
 		{"Sun Jul 15 00:00 2012", "0 * * */10 * Sun", false},
 		{"Mon Jul 9 00:00 2012", "0 * * 1,15 * *", false},
 		{"Sun Jul 15 00:00 2012", "0 * * 1,15 * *", true},
+		{"Sun Jul 15 00:00 2012", "0 * * */2 * Sun", true},
 	}
 
 	for _, test := range tests {
-		actual := matches(getTime(test.time), Parse(test.spec))
-		if test.expected != actual {
-			t.Logf("Actual Minutes mask: %b", Parse(test.spec).Minute)
-			t.Errorf("Fail evaluating %s on %s: (expected) %t != %t (actual)", test.spec, test.time, test.expected, actual)
+		actual := Parse(test.spec).Next(getTime(test.Time).Add(-1 * time.Second)
+		expected := getTime(test.time)
+		if test.expected && expected != actual || !test.expected && expected == actual {
+			t.Errorf("Fail evaluating %s on %s: (expected) %t != %t (actual)", test.spec, test.time, expected, actual)
 		}
 	}
 }
 
 func getTime(value string) time.Time {
+	if value == "" {
+		return time.Time{}
+	}
 	t, err := time.Parse("Mon Jan 2 15:04 2006", value)
 	if err != nil {
-		panic(err)
+		t, err = time.Parse("Mon Jan 2 15:04:05 2006", value)
+		if err != nil {
+			t, err = time.Parse("Mon Jan 2 15:04 2006 MST", value)
+			if err != nil {
+				panic(err)
+			}
+		}
 	}
+
 	return t
 }

@@ -64,13 +64,13 @@ func TestBits(t *testing.T) {
 		{hours, 0xffffff},            // 0-23: 24 ones
 		{dom, 0xfffffffe},            // 1-31: 31 ones, 1 zero
 		{months, 0x1ffe},             // 1-12: 12 ones, 1 zero
-		{dow, 0xff},                  // 0-6: 7 ones
+		{dow, 0x7f},                  // 0-6: 7 ones
 	}
 
 	for _, c := range allBits {
 		actual := all(c.r) // all() adds the STAR_BIT, so compensate for that..
 		if c.expected|STAR_BIT != actual {
-			t.Errorf("%d-%d/%d => (expected) %b != %b (actual)", c.r.min, c.r.max, 1, c.expected, actual)
+			t.Errorf("%d-%d/%d => (expected) %b != %b (actual)", c.r.min, c.r.max, 1, c.expected|STAR_BIT, actual)
 		}
 	}
 
