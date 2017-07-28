@@ -1,6 +1,7 @@
 package cron
 
 import (
+	"fmt"
 	"log"
 	"math"
 	"strconv"
@@ -60,6 +61,10 @@ func getRange(expr string, r bounds) uint64 {
 	)
 
 	var extra_star uint64
+	fmt.Println("expr: ", expr)
+	fmt.Println("bounds: ", r)
+	fmt.Println("rangeAndStep: ", rangeAndStep)
+	fmt.Println("lowAndHigh: ", lowAndHigh)
 	if lowAndHigh[0] == "*" || lowAndHigh[0] == "?" {
 		start = r.min
 		end = r.max
@@ -99,6 +104,8 @@ func getRange(expr string, r bounds) uint64 {
 	if start > end {
 		log.Panicf("Beginning of range (%d) beyond end of range (%d): %s", start, end, expr)
 	}
+	fmt.Println("extra_star: ", extra_star)
+	fmt.Printf("min: %v, max: %v, step: %v\n\n ", start, end, step)
 
 	return getBits(start, end, step) | extra_star
 }
@@ -129,6 +136,9 @@ func getBits(min, max, step uint) uint64 {
 
 	// If step is 1, use shifts.
 	if step == 1 {
+		fmt.Printf("%64b: [BB] \n", uint64(^(math.MaxUint64 << (max + 1))))
+		fmt.Printf("%64b: [BBB]\n", uint64((math.MaxUint64 << min)))
+		fmt.Printf("%64b: [BBBB]\n", uint64(^(math.MaxUint64<<(max+1))&(math.MaxUint64<<min)))
 		return ^(math.MaxUint64 << (max + 1)) & (math.MaxUint64 << min)
 	}
 
