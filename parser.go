@@ -18,6 +18,7 @@ func Parse(spec string) *Schedule {
 	// Split on whitespace.  We require 4 or 5 fields.
 	// (minute) (hour) (day of month) (month) (day of week, optional)
 	fields := strings.Fields(spec)
+	// fmt.Println("fields: ", fields)
 	if len(fields) != 5 && len(fields) != 6 {
 		log.Panicf("Expected 5 or 6 fields, found %d: %s", len(fields), spec)
 	}
@@ -61,7 +62,7 @@ func getRange(expr string, r bounds) uint64 {
 	)
 
 	var extra_star uint64
-	fmt.Println("expr: ", expr)
+	// fmt.Println("expr: ", expr)
 	fmt.Println("bounds: ", r)
 	fmt.Println("rangeAndStep: ", rangeAndStep)
 	fmt.Println("lowAndHigh: ", lowAndHigh)
@@ -71,6 +72,8 @@ func getRange(expr string, r bounds) uint64 {
 		extra_star = STAR_BIT
 	} else {
 		start = parseIntOrName(lowAndHigh[0], r.names)
+		fmt.Println("start: ", start)
+		fmt.Println("len: ", len(lowAndHigh))
 		switch len(lowAndHigh) {
 		case 1:
 			end = start
@@ -104,13 +107,15 @@ func getRange(expr string, r bounds) uint64 {
 	if start > end {
 		log.Panicf("Beginning of range (%d) beyond end of range (%d): %s", start, end, expr)
 	}
-	fmt.Println("extra_star: ", extra_star)
+	// fmt.Println("extra_star: ", extra_star)
 	fmt.Printf("min: %v, max: %v, step: %v\n\n ", start, end, step)
 
 	return getBits(start, end, step) | extra_star
 }
 
 func parseIntOrName(expr string, names map[string]uint) uint {
+	fmt.Println("expr: ", expr)
+	fmt.Println("names: ", names)
 	if names != nil {
 		if namedInt, ok := names[strings.ToLower(expr)]; ok {
 			return namedInt
@@ -136,9 +141,10 @@ func getBits(min, max, step uint) uint64 {
 
 	// If step is 1, use shifts.
 	if step == 1 {
-		fmt.Printf("%64b: [BB] \n", uint64(^(math.MaxUint64 << (max + 1))))
-		fmt.Printf("%64b: [BBB]\n", uint64((math.MaxUint64 << min)))
-		fmt.Printf("%64b: [BBBB]\n", uint64(^(math.MaxUint64<<(max+1))&(math.MaxUint64<<min)))
+		// fmt.Printf("%64b: [BB] \n", uint64(^(math.MaxUint64 << (max + 1))))
+		// fmt.Printf("%64b: [BBB]\n", uint64((math.MaxUint64 << min)))
+		// fmt.Printf("%64b: [BBBB]\n", uint64(^(math.MaxUint64<<(max+1))&(math.MaxUint64<<min)))
+		// fmt.Printf("%x: [0x]\n\n", uint64(^(math.MaxUint64<<(max+1))&(math.MaxUint64<<min)))
 		return ^(math.MaxUint64 << (max + 1)) & (math.MaxUint64 << min)
 	}
 
@@ -146,6 +152,7 @@ func getBits(min, max, step uint) uint64 {
 	for i := min; i <= max; i += step {
 		bits |= 1 << i
 	}
+	fmt.Printf("%x: [0x]\n\n", bits)
 	return bits
 }
 
