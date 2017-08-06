@@ -3,6 +3,7 @@
 package cron
 
 import (
+	"fmt"
 	"sort"
 	"time"
 )
@@ -46,14 +47,18 @@ func New() *Cron {
 }
 
 func (c *Cron) Add(spec string, cmd func()) {
+	fmt.Println("before append: ", c.Entries)
 	c.Entries = append(c.Entries, &Entry{Parse(spec), time.Time{}, cmd})
+	fmt.Println("after append: ", c.Entries)
 	entry := &Entry{Parse(spec), time.Time{}, cmd}
 	select {
 	case c.add <- entry:
 		// The run loop accepted the entry, nothing more to do.
+		fmt.Println("listening add: ", entry)
 		return
 	default:
 		// No one listening to that channel, so just add to the array.
+		fmt.Println("default append: ", c.Entries)
 		c.Entries = append(c.Entries, entry)
 	}
 
@@ -74,6 +79,7 @@ func (c *Cron) Start() {
 		if len(c.Entries) == 0 {
 			// If there are no entries yet, just sleep - it still handles new entries
 			// and stop requests.
+			fmt.Println("no entries")
 			effective = now.AddDate(10, 0, 0)
 		} else {
 			effective = c.Entries[0].Next
@@ -82,6 +88,7 @@ func (c *Cron) Start() {
 		select {
 		case now = <-time.After(effective.Sub(now)):
 			// Run every entry whose next time was this effective time.
+			fmt.Println("in effective: ", c.Entries)
 			for _, e := range c.Entries {
 				if e.Next != effective {
 					break
@@ -90,14 +97,17 @@ func (c *Cron) Start() {
 				e.Next = e.Schedule.Next(effective)
 			}
 		case newEntry := <-c.add:
+			fmt.Println("in case add: ", newEntry)
 			c.Entries = append(c.Entries, newEntry)
 
 		case <-c.stop:
+			fmt.Println("in case stop")
 			return
 		}
 	}
 }
 
 func (c Cron) Stop() {
+	fmt.Println("cron stop")
 	c.stop <- struct{}{}
 }
