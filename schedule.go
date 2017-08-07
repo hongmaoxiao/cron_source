@@ -81,22 +81,22 @@ WRAP:
 
 	// Find the first applicable month.
 	// If it's this month, then do nothing.
-	fmt.Println("schedule: ", s)
-	fmt.Println("month: ", t.Month())
-	fmt.Println("t month: ", uint(t.Month()))
-	fmt.Printf("%64b: [64b]\n", 1<<uint(t.Month()))
-	fmt.Printf("%64b: [64b]\n", s.Month)
-	fmt.Printf("and Month: %v \n\n", 1<<uint(t.Month())&s.Month)
+	// fmt.Println("schedule: ", s)
+	// fmt.Println("month: ", t.Month())
+	// fmt.Println("t month: ", uint(t.Month()))
+	// fmt.Printf("%64b: [64b]\n", 1<<uint(t.Month()))
+	// fmt.Printf("%64b: [64b]\n", s.Month)
+	// fmt.Printf("and Month: %v \n\n", 1<<uint(t.Month())&s.Month)
 	for 1<<uint(t.Month())&s.Month == 0 {
 		// If we have to add a month, reset the other parts to 0.
-		fmt.Println("in month")
+		// fmt.Println("in month")
 		if !added {
 			added = true
 			// Otherwise, set the date at the beginning (since the current time is irrelevant).
 			t = time.Date(t.Year(), t.Month(), 1, 0, 0, 0, 0, t.Location())
 		}
 		t = t.AddDate(0, 1, 0)
-		fmt.Println("added month: ", t)
+		// fmt.Println("added month: ", t)
 
 		// Wrapped around.
 		if t.Month() == time.January {
@@ -106,24 +106,24 @@ WRAP:
 
 	// Now get a day in that month.
 	for !dayMatches(s, t) {
-		fmt.Println("in day")
+		// fmt.Println("in day")
 		if !added {
 			added = true
 			t = time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
 		}
 		t = t.AddDate(0, 0, 1)
-		fmt.Println("added day: ", t)
+		// fmt.Println("added day: ", t)
 
 		if t.Day() == 1 {
 			goto WRAP
 		}
 	}
 
-	fmt.Println("t hour", uint(t.Hour()))
-	fmt.Printf("%64b: [64b]\n", 1<<uint(t.Hour()))
-	fmt.Printf("%64b: [64b]\n", s.Hour)
-	fmt.Printf("%64b: [64b] \n", 1<<uint(t.Hour())&s.Hour)
-	fmt.Printf("and Hour: %v \n\n", 1<<uint(t.Hour())&s.Hour)
+	// fmt.Println("t hour", uint(t.Hour()))
+	// fmt.Printf("%64b: [64b]\n", 1<<uint(t.Hour()))
+	// fmt.Printf("%64b: [64b]\n", s.Hour)
+	// fmt.Printf("%64b: [64b] \n", 1<<uint(t.Hour())&s.Hour)
+	// fmt.Printf("and Hour: %v \n\n", 1<<uint(t.Hour())&s.Hour)
 	for 1<<uint(t.Hour())&s.Hour == 0 {
 		fmt.Println("in hour")
 		if !added {
@@ -138,11 +138,11 @@ WRAP:
 		}
 	}
 
-	fmt.Println("t minute", uint(t.Minute()))
-	fmt.Printf("%64b: [64b]\n", 1<<uint(t.Minute()))
-	fmt.Printf("%64b: [64b]\n", s.Minute)
-	fmt.Printf("%64b: [64b] \n", 1<<uint(t.Minute())&s.Minute)
-	fmt.Printf("and Minute: %v \n\n", 1<<uint(t.Minute())&s.Minute)
+	// fmt.Println("t minute", uint(t.Minute()))
+	// fmt.Printf("%64b: [64b]\n", 1<<uint(t.Minute()))
+	// fmt.Printf("%64b: [64b]\n", s.Minute)
+	// fmt.Printf("%64b: [64b] \n", 1<<uint(t.Minute())&s.Minute)
+	// fmt.Printf("and Minute: %v \n\n", 1<<uint(t.Minute())&s.Minute)
 	for 1<<uint(t.Minute())&s.Minute == 0 {
 		fmt.Println("in minute")
 		if !added {
@@ -150,25 +150,25 @@ WRAP:
 			t = time.Date(t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), 0, 0, t.Location())
 		}
 		t = t.Add(1 * time.Minute)
-		fmt.Println("added minute", t)
+		// fmt.Println("added minute", t)
 
 		if t.Minute() == 0 {
 			goto WRAP
 		}
 	}
 
-	fmt.Println("t second", uint(t.Second()))
-	fmt.Printf("%64b: [64b]\n", 1<<uint(t.Second()))
-	fmt.Printf("%64b: [64b]\n", s.Second)
-	fmt.Printf("%64b: [64b] \n", 1<<uint(t.Second())&s.Second)
-	fmt.Printf("and Second: %v \n\n", 1<<uint(t.Second())&s.Second)
+	// fmt.Println("t second", uint(t.Second()))
+	// fmt.Printf("%64b: [64b]\n", 1<<uint(t.Second()))
+	// fmt.Printf("%64b: [64b]\n", s.Second)
+	// fmt.Printf("%64b: [64b] \n", 1<<uint(t.Second())&s.Second)
+	// fmt.Printf("and Second: %v \n\n", 1<<uint(t.Second())&s.Second)
 	for 1<<uint(t.Second())&s.Second == 0 {
 		if !added {
 			added = true
 			t = time.Date(t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second(), 0, t.Location())
 		}
 		t = t.Add(1 * time.Second)
-		fmt.Println("added second", t)
+		// fmt.Println("added second", t)
 
 		if t.Second() == 0 {
 			goto WRAP
@@ -185,24 +185,24 @@ func dayMatches(s *Schedule, t time.Time) bool {
 		dowMatch bool = 1<<uint(t.Weekday())&s.Dow > 0
 	)
 
-	fmt.Println("t dom", uint(t.Day()))
-	fmt.Printf("%64b: [64b]\n", 1<<uint(t.Day()))
-	fmt.Printf("%64b: [64b]\n", s.Dom)
-	fmt.Printf("%64b: [64b] \n", 1<<uint(t.Day())&s.Dom)
-	fmt.Printf("and dom: %v \n\n", 1<<uint(t.Day())&s.Dom)
-	fmt.Println("t Weekday", t.Weekday())
-	fmt.Println("t Weekday", uint(t.Weekday()))
-	fmt.Printf("%64b: [64b]\n", 1<<uint(t.Weekday()))
-	fmt.Printf("%64b: [64b]\n", s.Dow)
-	fmt.Printf("%64b: [64b] \n", 1<<uint(t.Weekday())&s.Dow)
-	fmt.Printf("and dow: %v \n\n", 1<<uint(t.Weekday())&s.Dow)
-	fmt.Printf("%64b: [64b]\n", uint(STAR_BIT))
-	fmt.Printf("%64b: [64b]\n", uint(s.Dom))
-	fmt.Printf("%64b: [64b]\n", uint(s.Dow))
-	fmt.Printf("s.Dom&STAR_BIT: %v \n", s.Dom&STAR_BIT)
-	fmt.Printf("s.Dow&STAR_BIT: %v \n\n", s.Dow&STAR_BIT)
+	// fmt.Println("t dom", uint(t.Day()))
+	// fmt.Printf("%64b: [64b]\n", 1<<uint(t.Day()))
+	// fmt.Printf("%64b: [64b]\n", s.Dom)
+	// fmt.Printf("%64b: [64b] \n", 1<<uint(t.Day())&s.Dom)
+	// fmt.Printf("and dom: %v \n\n", 1<<uint(t.Day())&s.Dom)
+	// fmt.Println("t Weekday", t.Weekday())
+	// fmt.Println("t Weekday", uint(t.Weekday()))
+	// fmt.Printf("%64b: [64b]\n", 1<<uint(t.Weekday()))
+	// fmt.Printf("%64b: [64b]\n", s.Dow)
+	// fmt.Printf("%64b: [64b] \n", 1<<uint(t.Weekday())&s.Dow)
+	// fmt.Printf("and dow: %v \n\n", 1<<uint(t.Weekday())&s.Dow)
+	// fmt.Printf("%64b: [64b]\n", uint(STAR_BIT))
+	// fmt.Printf("%64b: [64b]\n", uint(s.Dom))
+	// fmt.Printf("%64b: [64b]\n", uint(s.Dow))
+	// fmt.Printf("s.Dom&STAR_BIT: %v \n", s.Dom&STAR_BIT)
+	// fmt.Printf("s.Dow&STAR_BIT: %v \n\n", s.Dow&STAR_BIT)
 	if s.Dom&STAR_BIT > 0 || s.Dow&STAR_BIT > 0 {
-		fmt.Println("iiiiiiiii")
+		// fmt.Println("iiiiiiiii")
 		return domMatch && dowMatch
 	}
 	return domMatch || dowMatch

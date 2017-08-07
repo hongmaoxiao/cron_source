@@ -49,7 +49,7 @@ func New() *Cron {
 func (c *Cron) Add(spec string, cmd func()) {
 	fmt.Println("before append: ", c.Entries)
 	c.Entries = append(c.Entries, &Entry{Parse(spec), time.Time{}, cmd})
-	fmt.Println("after append: ", c.Entries)
+	fmt.Println("after append: ", c.Entries[0])
 	entry := &Entry{Parse(spec), time.Time{}, cmd}
 	select {
 	case c.add <- entry:
@@ -67,13 +67,20 @@ func (c *Cron) Add(spec string, cmd func()) {
 func (c *Cron) Start() {
 	// Figure out the next activation times for each entry.
 	now := time.Now()
+	fmt.Println("now: ", now)
+	fmt.Println("first entries: ", c.Entries[0])
+	fmt.Println("entry len: ", len(c.Entries))
 	for _, entry := range c.Entries {
+		fmt.Println("first in next: ")
 		entry.Next = entry.Schedule.Next(now)
 	}
 
 	for {
 		// Determine the next entry to run.
+		fmt.Println("entry len: ", len(c.Entries))
+		fmt.Println("before sort: ", c.Entries)
 		sort.Sort(byTime(c.Entries))
+		fmt.Println("after sort: ", c.Entries)
 
 		var effective time.Time
 		if len(c.Entries) == 0 {
@@ -82,23 +89,31 @@ func (c *Cron) Start() {
 			fmt.Println("no entries")
 			effective = now.AddDate(10, 0, 0)
 		} else {
+			fmt.Println("entries: ", c.Entries[0])
 			effective = c.Entries[0].Next
+			fmt.Println("next time: ", effective)
 		}
 
 		select {
 		case now = <-time.After(effective.Sub(now)):
 			// Run every entry whose next time was this effective time.
-			fmt.Println("in effective: ", c.Entries)
+			fmt.Println("in effective: ", c.Entries[0])
 			for _, e := range c.Entries {
+				fmt.Println("e.Next: ", e.Next)
+				fmt.Println("effective: ", effective)
 				if e.Next != effective {
+					fmt.Println("not equare")
 					break
 				}
+				fmt.Println("e.func", e.Func)
 				go e.Func()
 				e.Next = e.Schedule.Next(effective)
 			}
 		case newEntry := <-c.add:
 			fmt.Println("in case add: ", newEntry)
 			c.Entries = append(c.Entries, newEntry)
+			fmt.Println("add new entry: ", c.Entries[0])
+			fmt.Println("add new entry: ", c.Entries[1])
 
 		case <-c.stop:
 			fmt.Println("in case stop")

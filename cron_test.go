@@ -31,7 +31,8 @@ func TestAddBeforeRunning(t *testing.T) {
 	select {
 	case <-time.After(2 * time.Second):
 		t.FailNow()
-	case <-done:
+	case done := <-done:
+		fmt.Println("done: ", done)
 	}
 }
 

@@ -63,17 +63,17 @@ func getRange(expr string, r bounds) uint64 {
 
 	var extra_star uint64
 	// fmt.Println("expr: ", expr)
-	fmt.Println("bounds: ", r)
-	fmt.Println("rangeAndStep: ", rangeAndStep)
-	fmt.Println("lowAndHigh: ", lowAndHigh)
+	// fmt.Println("bounds: ", r)
+	// fmt.Println("rangeAndStep: ", rangeAndStep)
+	// fmt.Println("lowAndHigh: ", lowAndHigh)
 	if lowAndHigh[0] == "*" || lowAndHigh[0] == "?" {
 		start = r.min
 		end = r.max
 		extra_star = STAR_BIT
 	} else {
 		start = parseIntOrName(lowAndHigh[0], r.names)
-		fmt.Println("start: ", start)
-		fmt.Println("len: ", len(lowAndHigh))
+		// fmt.Println("start: ", start)
+		// fmt.Println("len: ", len(lowAndHigh))
 		switch len(lowAndHigh) {
 		case 1:
 			end = start
@@ -108,14 +108,14 @@ func getRange(expr string, r bounds) uint64 {
 		log.Panicf("Beginning of range (%d) beyond end of range (%d): %s", start, end, expr)
 	}
 	// fmt.Println("extra_star: ", extra_star)
-	fmt.Printf("min: %v, max: %v, step: %v\n\n ", start, end, step)
+	// fmt.Printf("min: %v, max: %v, step: %v\n\n ", start, end, step)
 
 	return getBits(start, end, step) | extra_star
 }
 
 func parseIntOrName(expr string, names map[string]uint) uint {
-	fmt.Println("expr: ", expr)
-	fmt.Println("names: ", names)
+	// fmt.Println("expr: ", expr)
+	// fmt.Println("names: ", names)
 	if names != nil {
 		if namedInt, ok := names[strings.ToLower(expr)]; ok {
 			return namedInt
