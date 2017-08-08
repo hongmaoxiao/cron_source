@@ -65,11 +65,14 @@ func (c *Cron) Add(spec string, cmd func()) {
 }
 
 func (c *Cron) Start() {
+	go c.Run()
+}
+
+func (c *Cron) Run() {
 	// Figure out the next activation times for each entry.
 	now := time.Now()
 	fmt.Println("now: ", now)
 	fmt.Println("first entries: ", c.Entries[0])
-	fmt.Println("entry len: ", len(c.Entries))
 	for _, entry := range c.Entries {
 		fmt.Println("first in next: ")
 		entry.Next = entry.Schedule.Next(now)
@@ -112,8 +115,6 @@ func (c *Cron) Start() {
 		case newEntry := <-c.add:
 			fmt.Println("in case add: ", newEntry)
 			c.Entries = append(c.Entries, newEntry)
-			fmt.Println("add new entry: ", c.Entries[0])
-			fmt.Println("add new entry: ", c.Entries[1])
 
 		case <-c.stop:
 			fmt.Println("in case stop")
