@@ -35,6 +35,15 @@ func (s byTime) Swap(i, j int) {
 }
 
 func (s byTime) Less(i, j int) bool {
+	// Two zero times should return false.
+	// Otherwise, zero is "greater" than any other time.
+	// (To sort it at the end of the list.)
+	if s[i].Next.IsZero() {
+		return false
+	}
+	if s[j].Next.IsZero() {
+		return true
+	}
 	return s[i].Next.Before(s[j].Next)
 }
 
@@ -60,6 +69,7 @@ func (c *Cron) Add(spec string, cmd func()) {
 		// No one listening to that channel, so just add to the array.
 		fmt.Println("default append: ", c.Entries)
 		c.Entries = append(c.Entries, entry)
+		entry.Next = entry.Schedule.Next(time.Now().Local()) // Just in case...
 	}
 
 }
@@ -70,7 +80,7 @@ func (c *Cron) Start() {
 
 func (c *Cron) Run() {
 	// Figure out the next activation times for each entry.
-	now := time.Now()
+	now := time.Now().Local()
 	fmt.Println("now: ", now)
 	fmt.Println("first entries: ", c.Entries[0])
 	for _, entry := range c.Entries {
@@ -86,7 +96,7 @@ func (c *Cron) Run() {
 		fmt.Println("after sort: ", c.Entries)
 
 		var effective time.Time
-		if len(c.Entries) == 0 {
+		if len(c.Entries) == 0 || c.Entries[0].Next.IsZero() {
 			// If there are no entries yet, just sleep - it still handles new entries
 			// and stop requests.
 			fmt.Println("no entries")
@@ -115,6 +125,7 @@ func (c *Cron) Run() {
 		case newEntry := <-c.add:
 			fmt.Println("in case add: ", newEntry)
 			c.Entries = append(c.Entries, newEntry)
+			newEntry.Next = newEntry.Schedule.Next(now)
 
 		case <-c.stop:
 			fmt.Println("in case stop")
