@@ -65,7 +65,7 @@ func (s *Schedule) Next(t time.Time) time.Time {
 	// values)
 
 	// Start at the earliest possible time.
-	t = t.Add(1 * time.Second)
+	t = t.Add(1*time.Second - time.Duration(t.Nanosecond())*time.Nanosecond)
 	fmt.Println("added time: ", t)
 
 	// This flag indicates whether a field has been incremented.
