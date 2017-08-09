@@ -57,8 +57,6 @@ func New() *Cron {
 
 func (c *Cron) Add(spec string, cmd func()) {
 	fmt.Println("before append: ", c.Entries)
-	c.Entries = append(c.Entries, &Entry{Parse(spec), time.Time{}, cmd})
-	fmt.Println("after append: ", c.Entries[0])
 	entry := &Entry{Parse(spec), time.Time{}, cmd}
 	select {
 	case c.add <- entry:
@@ -69,7 +67,7 @@ func (c *Cron) Add(spec string, cmd func()) {
 		// No one listening to that channel, so just add to the array.
 		fmt.Println("default append: ", c.Entries)
 		c.Entries = append(c.Entries, entry)
-		entry.Next = entry.Schedule.Next(time.Now().Local()) // Just in case...
+		entry.Next = entry.Schedule.Next(time.Now().Local()) // Just in case..
 	}
 
 }
@@ -82,8 +80,9 @@ func (c *Cron) Run() {
 	// Figure out the next activation times for each entry.
 	now := time.Now().Local()
 	fmt.Println("now: ", now)
-	fmt.Println("first entries: ", c.Entries[0])
+	fmt.Println("first entries: ", c.Entries)
 	for _, entry := range c.Entries {
+		fmt.Println("range for entry: ", entry)
 		fmt.Println("first in next: ")
 		entry.Next = entry.Schedule.Next(now)
 	}
@@ -102,7 +101,7 @@ func (c *Cron) Run() {
 			fmt.Println("no entries")
 			effective = now.AddDate(10, 0, 0)
 		} else {
-			fmt.Println("entries: ", c.Entries[0])
+			fmt.Println("entries 0: ", c.Entries[0])
 			effective = c.Entries[0].Next
 			fmt.Println("next time: ", effective)
 		}
@@ -110,6 +109,7 @@ func (c *Cron) Run() {
 		select {
 		case now = <-time.After(effective.Sub(now)):
 			// Run every entry whose next time was this effective time.
+			fmt.Println("arrival now: ", now)
 			fmt.Println("in effective: ", c.Entries[0])
 			for _, e := range c.Entries {
 				fmt.Println("e.Next: ", e.Next)
