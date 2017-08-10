@@ -12,9 +12,11 @@ import (
 // specified by the spec.  See http://en.wikipedia.org/wiki/Cron
 // It may be started and stopped.
 type Cron struct {
-	Entries []*Entry
-	stop    chan struct{}
-	add     chan *Entry
+	entries  []*Entry
+	stop     chan struct{}
+	add      chan *Entry
+	snapshot chan []*Entry
+	running  bool
 }
 
 // Simple interface for submitted cron jobs.
@@ -54,9 +56,11 @@ func (s byTime) Less(i, j int) bool {
 
 func New() *Cron {
 	return &Cron{
-		Entries: nil,
-		add:     make(chan *Entry, 1),
-		stop:    make(chan struct{}, 1),
+		entries:  nil,
+		add:      make(chan *Entry),
+		stop:     make(chan struct{}),
+		snapshot: make(chan []*Entry),
+		running:  false,
 	}
 }
 
@@ -74,30 +78,37 @@ func (c *Cron) AddFunc(spec string, cmd func()) {
 func (c *Cron) AddJob(spec string, cmd Job) {
 	fmt.Println("before append: ", c.Entries)
 	entry := &Entry{Parse(spec), time.Time{}, cmd}
-	select {
-	case c.add <- entry:
-		// The run loop accepted the entry, nothing more to do.
-		fmt.Println("listening add: ", entry)
+	if !c.running {
+		c.entries = append(c.entries, entry)
 		return
-	default:
-		// No one listening to that channel, so just add to the array.
-		fmt.Println("default append: ", c.Entries)
-		c.Entries = append(c.Entries, entry)
-		entry.Next = entry.Schedule.Next(time.Now().Local()) // Just in case..
 	}
 
+	c.add <- entry
+}
+
+// Return a snapshot of the cron entries.
+func (c *Cron) Entries() []*Entry {
+	if c.running {
+		c.snapshot <- nil
+		x := <-c.snapshot
+		return x
+	}
+	return c.entrySnapshot()
 }
 
 func (c *Cron) Start() {
-	go c.Run()
+	c.running = true
+	go c.run()
 }
 
-func (c *Cron) Run() {
+// Run the scheduler.. this is private just due to the need to synchronize
+// access to the 'running' state variable.
+func (c *Cron) run() {
 	// Figure out the next activation times for each entry.
 	now := time.Now().Local()
 	fmt.Println("now: ", now)
-	fmt.Println("first entries: ", c.Entries)
-	for _, entry := range c.Entries {
+	fmt.Println("first entries: ", c.entries)
+	for _, entry := range c.entries {
 		fmt.Println("range for entry: ", entry)
 		fmt.Println("first in next: ")
 		entry.Next = entry.Schedule.Next(now)
@@ -105,20 +116,20 @@ func (c *Cron) Run() {
 
 	for {
 		// Determine the next entry to run.
-		fmt.Println("entry len: ", len(c.Entries))
-		fmt.Println("before sort: ", c.Entries)
-		sort.Sort(byTime(c.Entries))
-		fmt.Println("after sort: ", c.Entries)
+		fmt.Println("entry len: ", len(c.entries))
+		fmt.Println("before sort: ", c.entries)
+		sort.Sort(byTime(c.entries))
+		fmt.Println("after sort: ", c.entries)
 
 		var effective time.Time
-		if len(c.Entries) == 0 || c.Entries[0].Next.IsZero() {
+		if len(c.entries) == 0 || c.entries[0].Next.IsZero() {
 			// If there are no entries yet, just sleep - it still handles new entries
 			// and stop requests.
 			fmt.Println("no entries")
 			effective = now.AddDate(10, 0, 0)
 		} else {
-			fmt.Println("entries 0: ", c.Entries[0])
-			effective = c.Entries[0].Next
+			fmt.Println("entries 0: ", c.entries[0])
+			effective = c.entries[0].Next
 			fmt.Println("next time: ", effective)
 		}
 
@@ -126,8 +137,8 @@ func (c *Cron) Run() {
 		case now = <-time.After(effective.Sub(now)):
 			// Run every entry whose next time was this effective time.
 			fmt.Println("arrival now: ", now)
-			fmt.Println("in effective: ", c.Entries[0])
-			for _, e := range c.Entries {
+			fmt.Println("in effective: ", c.entries[0])
+			for _, e := range c.entries {
 				fmt.Println("e.Next: ", e.Next)
 				fmt.Println("effective: ", effective)
 				if e.Next != effective {
@@ -140,8 +151,11 @@ func (c *Cron) Run() {
 			}
 		case newEntry := <-c.add:
 			fmt.Println("in case add: ", newEntry)
-			c.Entries = append(c.Entries, newEntry)
+			c.entries = append(c.entries, newEntry)
 			newEntry.Next = newEntry.Schedule.Next(now)
+
+		case <-c.snapshot:
+			c.snapshot <- c.entrySnapshot()
 
 		case <-c.stop:
 			fmt.Println("in case stop")
@@ -150,7 +164,16 @@ func (c *Cron) Run() {
 	}
 }
 
-func (c Cron) Stop() {
+func (c *Cron) Stop() {
 	fmt.Println("cron stop")
 	c.stop <- struct{}{}
+	c.running = false
+}
+
+func (c *Cron) entrySnapshot() []*Entry {
+	entries := []*Entry{}
+	for _, e := range c.entries {
+		entries = append(entries, &Entry{e.Schedule, e.Next, e.Job})
+	}
+	return entries
 }
