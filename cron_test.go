@@ -22,7 +22,7 @@ func TestNoEntries(t *testing.T) {
 // Add a job, start cron, expect it runs.
 func TestAddBeforeRunning(t *testing.T) {
 	cron := New()
-	cron.Add("* * * * * ?", func() {
+	cron.AddFunc("* * * * * ?", func() {
 		cron.Stop()
 	})
 	done := startAndSignal(cron)
@@ -41,7 +41,7 @@ func TestAddWhileRunning(t *testing.T) {
 	cron := New()
 	done := startAndSignal(cron)
 	go func() {
-		cron.Add("* * * * * ?", func() {
+		cron.AddFunc("* * * * * ?", func() {
 			cron.Stop()
 		})
 	}()
@@ -59,11 +59,11 @@ func TestAddWhileRunning(t *testing.T) {
 // that the immediate entry runs immediately.
 func TestMultipleEntries(t *testing.T) {
 	cron := New()
-	cron.Add("0 0 0 1 1 ?", func() {})
-	cron.Add("* * * * * ?", func() {
+	cron.AddFunc("0 0 0 1 1 ?", func() {})
+	cron.AddFunc("* * * * * ?", func() {
 		cron.Stop()
 	})
-	cron.Add("0 0 0 31 12 ?", func() {})
+	cron.AddFunc("0 0 0 31 12 ?", func() {})
 	done := startAndSignal(cron)
 
 	select {
@@ -79,7 +79,7 @@ func TestLocalTimezone(t *testing.T) {
 	cron := New()
 	now := time.Now().Local()
 	spec := fmt.Sprintf("%d %d %d %d %d ?", now.Second()+1, now.Minute(), now.Hour(), now.Day(), now.Month())
-	cron.Add(spec, func() { cron.Stop() })
+	cron.AddFunc(spec, func() { cron.Stop() })
 	done := startAndSignal(cron)
 
 	select {
@@ -87,6 +87,41 @@ func TestLocalTimezone(t *testing.T) {
 		t.FailNow()
 	case <-done:
 		fmt.Println("done: ", done)
+	}
+}
+
+type testRunnable struct {
+	cron *Cron
+	name string
+}
+
+func (t testRunnable) Run() {
+	t.cron.Stop()
+}
+
+// Simple test using Runnables.
+func TestRunnable(t *testing.T) {
+	cron := New()
+	cron.AddJob("0 0 0 30 Feb ?", testRunnable{cron, "job0"})
+	cron.AddJob("0 0 0 1 1 ?", testRunnable{cron, "job1"})
+	cron.AddJob("* * * * * ?", testRunnable{cron, "job2"})
+	cron.AddJob("1 0 0 1 1 ?", testRunnable{cron, "job3"})
+
+	done := startAndSignal(cron)
+	select {
+	case <-time.After(2 * time.Second):
+		t.FailNow()
+	case <-done:
+		fmt.Println("done: ", done)
+	}
+
+	// Ensure the entries are in the right order.
+	answers := []string{"job2", "job1", "job3", "job0"}
+	for i, answer := range answers {
+		actual := cron.Entries[i].Job.(testRunnable).name
+		if actual != answer {
+			t.Errorf("Jobs not in the right order. (expected) %s != %s (actual)", answer, actual)
+		}
 	}
 }
 
