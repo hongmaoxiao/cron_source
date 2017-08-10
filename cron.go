@@ -68,10 +68,10 @@ func (r jobAdapter) Run() {
 }
 
 func (c *Cron) AddFunc(spec string, cmd func()) {
-	c.AddFunc(spec, jobAdapter(cmd))
+	c.AddJob(spec, jobAdapter(cmd))
 }
 
-func (c *Cron) AddJob(spec string, cmd func()) {
+func (c *Cron) AddJob(spec string, cmd Job) {
 	fmt.Println("before append: ", c.Entries)
 	entry := &Entry{Parse(spec), time.Time{}, cmd}
 	select {

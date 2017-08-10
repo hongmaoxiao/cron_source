@@ -6,89 +6,89 @@ import (
 	"time"
 )
 
-// Start and stop cron with no entries
-func TestNoEntries(t *testing.T) {
-	cron := New()
-	done := startAndSignal(cron)
-	go cron.Stop()
+// // Start and stop cron with no entries
+// func TestNoEntries(t *testing.T) {
+// cron := New()
+// done := startAndSignal(cron)
+// go cron.Stop()
 
-	select {
-	case <-time.After(1 * time.Second):
-		t.FailNow()
-	case <-done:
-	}
-}
+// select {
+// case <-time.After(1 * time.Second):
+// t.FailNow()
+// case <-done:
+// }
+// }
 
-// Add a job, start cron, expect it runs.
-func TestAddBeforeRunning(t *testing.T) {
-	cron := New()
-	cron.AddFunc("* * * * * ?", func() {
-		cron.Stop()
-	})
-	done := startAndSignal(cron)
+// // Add a job, start cron, expect it runs.
+// func TestAddBeforeRunning(t *testing.T) {
+// cron := New()
+// cron.AddFunc("* * * * * ?", func() {
+// cron.Stop()
+// })
+// done := startAndSignal(cron)
 
-	// Give cron 2 seconds to run our job (which is always activated).
-	select {
-	case <-time.After(2 * time.Second):
-		t.FailNow()
-	case done := <-done:
-		fmt.Println("done: ", done)
-	}
-}
+// // Give cron 2 seconds to run our job (which is always activated).
+// select {
+// case <-time.After(2 * time.Second):
+// t.FailNow()
+// case done := <-done:
+// fmt.Println("done: ", done)
+// }
+// }
 
-// Start cron, add a job, expect it runs.
-func TestAddWhileRunning(t *testing.T) {
-	cron := New()
-	done := startAndSignal(cron)
-	go func() {
-		cron.AddFunc("* * * * * ?", func() {
-			cron.Stop()
-		})
-	}()
+// // Start cron, add a job, expect it runs.
+// func TestAddWhileRunning(t *testing.T) {
+// cron := New()
+// done := startAndSignal(cron)
+// go func() {
+// cron.AddFunc("* * * * * ?", func() {
+// cron.Stop()
+// })
+// }()
 
-	select {
-	case <-time.After(2 * time.Second):
-		t.FailNow()
-	case done := <-done:
-		fmt.Println("done: ", done)
-	}
-}
+// select {
+// case <-time.After(2 * time.Second):
+// t.FailNow()
+// case done := <-done:
+// fmt.Println("done: ", done)
+// }
+// }
 
-// Test that the entries are correctly sorted.
-// Add a bunch of long-in-the-future entries, and an immediate entry, and ensure
-// that the immediate entry runs immediately.
-func TestMultipleEntries(t *testing.T) {
-	cron := New()
-	cron.AddFunc("0 0 0 1 1 ?", func() {})
-	cron.AddFunc("* * * * * ?", func() {
-		cron.Stop()
-	})
-	cron.AddFunc("0 0 0 31 12 ?", func() {})
-	done := startAndSignal(cron)
+// // Test that the entries are correctly sorted.
+// // Add a bunch of long-in-the-future entries, and an immediate entry, and ensure
+// // that the immediate entry runs immediately.
+// func TestMultipleEntries(t *testing.T) {
+// cron := New()
+// cron.AddFunc("0 0 0 1 1 ?", func() {})
+// cron.AddFunc("* * * * * ?", func() {
+// cron.Stop()
+// })
+// cron.AddFunc("0 0 0 31 12 ?", func() {})
+// done := startAndSignal(cron)
 
-	select {
-	case <-time.After(2 * time.Second):
-		t.FailNow()
-	case <-done:
-		fmt.Println("done: ", done)
-	}
-}
+// select {
+// case <-time.After(2 * time.Second):
+// t.FailNow()
+// case <-done:
+// fmt.Println("done: ", done)
+// }
+// }
 
-// Test that the cron is run in the local time zone (as opposed to UTC).
-func TestLocalTimezone(t *testing.T) {
-	cron := New()
-	now := time.Now().Local()
-	spec := fmt.Sprintf("%d %d %d %d %d ?", now.Second()+1, now.Minute(), now.Hour(), now.Day(), now.Month())
-	cron.AddFunc(spec, func() { cron.Stop() })
-	done := startAndSignal(cron)
+// // Test that the cron is run in the local time zone (as opposed to UTC).
+// func TestLocalTimezone(t *testing.T) {
+// cron := New()
+// now := time.Now().Local()
+// spec := fmt.Sprintf("%d %d %d %d %d ?", now.Second()+1, now.Minute(), now.Hour(), now.Day(), now.Month())
+// cron.AddFunc(spec, func() { cron.Stop() })
+// done := startAndSignal(cron)
 
-	select {
-	case <-time.After(2 * time.Second):
-		t.FailNow()
-	case <-done:
-		fmt.Println("done: ", done)
-	}
-}
+// select {
+// case <-time.After(2 * time.Second):
+// t.FailNow()
+// case <-done:
+// fmt.Println("done: ", done)
+// }
+// }
 
 type testRunnable struct {
 	cron *Cron
@@ -119,6 +119,7 @@ func TestRunnable(t *testing.T) {
 	answers := []string{"job2", "job1", "job3", "job0"}
 	for i, answer := range answers {
 		actual := cron.Entries[i].Job.(testRunnable).name
+		fmt.Println("actual in turn: ", actual)
 		if actual != answer {
 			t.Errorf("Jobs not in the right order. (expected) %s != %s (actual)", answer, actual)
 		}
