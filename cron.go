@@ -28,6 +28,7 @@ type Job interface {
 type Entry struct {
 	*Schedule
 	Next time.Time
+	Prev time.Time
 	Job  Job
 }
 
@@ -77,7 +78,10 @@ func (c *Cron) AddFunc(spec string, cmd func()) {
 
 func (c *Cron) AddJob(spec string, cmd Job) {
 	fmt.Println("before append entry len: ", len(c.entries))
-	entry := &Entry{Parse(spec), time.Time{}, cmd}
+	entry := &Entry{
+		Schedule: Parse(spec)
+		Job: cmd,
+	}
 	if !c.running {
 		fmt.Println("not running, append entries")
 		c.entries = append(c.entries, entry)
@@ -153,6 +157,7 @@ func (c *Cron) run() {
 				}
 				fmt.Println("e.func", e.Job)
 				go e.Job.Run()
+				e.Prev = e.Next
 				e.Next = e.Schedule.Next(effective)
 			}
 		case newEntry := <-c.add:
@@ -180,7 +185,12 @@ func (c *Cron) Stop() {
 func (c *Cron) entrySnapshot() []*Entry {
 	entries := []*Entry{}
 	for _, e := range c.entries {
-		entries = append(entries, &Entry{e.Schedule, e.Next, e.Job})
+		entries = append(entries, &Entry{
+			Schedul: e.Schedule,
+			Next: e.Next,
+			Prev: e.Prev,
+			Job: e.Job,
+		})
 	}
 	return entries
 }
