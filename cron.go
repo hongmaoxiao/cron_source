@@ -76,10 +76,12 @@ func (c *Cron) AddFunc(spec string, cmd func()) {
 }
 
 func (c *Cron) AddJob(spec string, cmd Job) {
-	fmt.Println("before append: ", c.Entries)
+	fmt.Println("before append entry len: ", len(c.entries))
 	entry := &Entry{Parse(spec), time.Time{}, cmd}
 	if !c.running {
+		fmt.Println("not running, append entries")
 		c.entries = append(c.entries, entry)
+		fmt.Println("after append entry len: ", len(c.entries))
 		return
 	}
 

@@ -25,23 +25,23 @@ const ONE_SECOND = 1*time.Second + 10*time.Millisecond
 // }
 // }
 
-// Start, stop, then add an entry. Verify entry doesn't run.
-func TestStopCausesJobsToNotRun(t *testing.T) {
-	wg := &sync.WaitGroup{}
-	wg.Add(1)
+// // Start, stop, then add an entry. Verify entry doesn't run.
+// func TestStopCausesJobsToNotRun(t *testing.T) {
+// wg := &sync.WaitGroup{}
+// wg.Add(1)
 
-	cron := New()
-	cron.Start()
-	cron.Stop()
-	cron.AddFunc("* * * * * ?", func() { wg.Done() })
+// cron := New()
+// cron.Start()
+// cron.Stop()
+// cron.AddFunc("* * * * * ?", func() { wg.Done() })
 
-	select {
-	case <-time.After(ONE_SECOND):
-	// No job ran!
-	case <-wait(wg):
-		t.FailNow()
-	}
-}
+// select {
+// case <-time.After(ONE_SECOND):
+// // No job ran!
+// case <-wait(wg):
+// t.FailNow()
+// }
+// }
 
 // // Add a job, start cron, expect it runs.
 // func TestAddBeforeRunning(t *testing.T) {
@@ -61,22 +61,22 @@ func TestStopCausesJobsToNotRun(t *testing.T) {
 // }
 // }
 
-// // Start cron, add a job, expect it runs.
-// func TestAddWhileRunning(t *testing.T) {
-// wg := &sync.WaitGroup{}
-// wg.Add(1)
+// Start cron, add a job, expect it runs.
+func TestAddWhileRunning(t *testing.T) {
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
 
-// cron := New()
-// cron.Start()
-// defer cron.Stop()
-// cron.AddFunc("* * * * * ?", func() { wg.Done() })
+	cron := New()
+	cron.Start()
+	defer cron.Stop()
+	cron.AddFunc("* * * * * ?", func() { wg.Done() })
 
-// select {
-// case <-time.After(ONE_SECOND):
-// t.FailNow()
-// case <-wait(wg):
-// }
-// }
+	select {
+	case <-time.After(ONE_SECOND):
+		t.FailNow()
+	case <-wait(wg):
+	}
+}
 
 // // Test that the entries are correctly sorted.
 // // Add a bunch of long-in-the-future entries, and an immediate entry, and ensure
