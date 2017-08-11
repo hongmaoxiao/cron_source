@@ -97,6 +97,7 @@ func (c *Cron) Entries() []*Entry {
 }
 
 func (c *Cron) Start() {
+	fmt.Println("cron start")
 	c.running = true
 	go c.run()
 }
