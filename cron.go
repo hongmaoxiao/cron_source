@@ -91,8 +91,11 @@ func (c *Cron) AddJob(spec string, cmd Job) {
 // Return a snapshot of the cron entries.
 func (c *Cron) Entries() []*Entry {
 	if c.running {
+		fmt.Println("snapshot")
 		c.snapshot <- nil
+		fmt.Println("block......")
 		x := <-c.snapshot
+		fmt.Println("x: ", x)
 		return x
 	}
 	return c.entrySnapshot()
@@ -157,7 +160,8 @@ func (c *Cron) run() {
 			c.entries = append(c.entries, newEntry)
 			newEntry.Next = newEntry.Schedule.Next(now)
 
-		case <-c.snapshot:
+		case sn := <-c.snapshot:
+			fmt.Println("receive snapshot: ", sn)
 			c.snapshot <- c.entrySnapshot()
 
 		case <-c.stop:
