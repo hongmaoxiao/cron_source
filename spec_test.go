@@ -60,7 +60,7 @@ func TestActivation(t *testing.T) {
 		actual := Parse(test.spec).Next(getTime(test.time).Add(-1 * time.Second))
 		expected := getTime(test.time)
 		if test.expected && expected != actual || !test.expected && expected == actual {
-			t.Errorf("Fail evaluating %s on %s: (expected) %t != %t (actual)", test.spec, test.time, expected, actual)
+			t.Errorf("Fail evaluating %s on %s: (expected) %s != %s (actual)", test.spec, test.time, expected, actual)
 		}
 	}
 }
@@ -85,9 +85,9 @@ func TestNext(t *testing.T) {
 		{"Mon Jul 9 23:35:51 2012", "15/35 20-35/15 1/2 * *", "Tue Jul 10 01:20:15 2012"},
 		{"Mon Jul 9 23:35:51 2012", "15/35 20-35/15 10-12 * *", "Tue Jul 10 10:20:15 2012"},
 
-		{"Mon Jul 9 23:35:51 2012", "15/35 20-35/15 1/2 */2 *", "Thu Jul 11 01:20:15 2012"},
-		{"Mon Jul 9 23:35:51 2012", "15/35 20-35/15 * 9-12 *", "Wed Jul 10 00:20:15 2012"},
-		{"Mon Jul 9 23:35:51 2012", "15/35 20-35/15 * 9-12 Jul *", "Wed Jul 10 00:20:15 2012"},
+		{"Mon Jul 9 23:35:51 2012", "15/35 20-35/15 1/2 */2 * *", "Thu Jul 11 01:20:15 2012"},
+		{"Mon Jul 9 23:35:51 2012", "15/35 20-35/15 * 9-20 * *", "Wed Jul 10 00:20:15 2012"},
+		{"Mon Jul 9 23:35:51 2012", "15/35 20-35/15 * 9-20 Jul *", "Wed Jul 10 00:20:15 2012"},
 
 		// Wrap around months
 		{"Mon Jul 9 23:35 2012", "0 0 0 9 Apr-Oct ?", "Thu Aug 9 00:00 2012"},
@@ -115,8 +115,8 @@ func TestNext(t *testing.T) {
 	for _, c := range runs {
 		actual := Parse(c.spec).Next(getTime(c.time))
 		expected := getTime(c.expected)
-		if expected != actual {
-			t.Errorf("%s, \"%s\": (expected) %v != %v (actual)", c.time, c.expected, expected, actual)
+		if actual != expected {
+			t.Errorf("%s, \"%s\": (expected) %v != %v (actual)", c.time, c.spec, expected, actual)
 		}
 	}
 }
