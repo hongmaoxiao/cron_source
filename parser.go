@@ -8,8 +8,8 @@ import (
 	"strings"
 )
 
-// Returns a new crontab schedule representing the given spec.
-// Panics with a descriptive error if the spec is not valid.
+// Parse returns a new crontab schedule representing the given spec.
+// It panics with a descriptive error if the spec is not valid.
 func Parse(spec string) *Schedule {
 	if spec[0] == '@' {
 		return parseDescriptor(spec)
@@ -40,8 +40,8 @@ func Parse(spec string) *Schedule {
 	return schedule
 }
 
-// Return an Int with the bits set representing all of the times that the field represents.
-// A "field" is a comma-separated list of "ranges".
+// getField returns an Int with the bits set representing all of the times that
+// the field represents.  A "field" is a comma-separated list of "ranges".
 func getField(field string, r bounds) uint64 {
 	// list = range {"," range}
 	var bits uint64
@@ -52,8 +52,9 @@ func getField(field string, r bounds) uint64 {
 	return bits
 }
 
+// getRange returns the bits indicated by the given expression:
+//   number | number "-" number [ "/" number ]
 func getRange(expr string, r bounds) uint64 {
-	// number | number "-" number [ "/" number ]
 	var (
 		start, end, step uint
 		rangeAndStep     = strings.Split(expr, "/")
@@ -69,7 +70,7 @@ func getRange(expr string, r bounds) uint64 {
 	if lowAndHigh[0] == "*" || lowAndHigh[0] == "?" {
 		start = r.min
 		end = r.max
-		extra_star = STAR_BIT
+		extra_star = starBit
 	} else {
 		start = parseIntOrName(lowAndHigh[0], r.names)
 		// fmt.Println("start: ", start)
@@ -113,6 +114,7 @@ func getRange(expr string, r bounds) uint64 {
 	return getBits(start, end, step) | extra_star
 }
 
+// parseIntOrName returns the (possibly-named) integer contained in expr.
 func parseIntOrName(expr string, names map[string]uint) uint {
 	// fmt.Println("expr: ", expr)
 	// fmt.Println("names: ", names)
@@ -124,6 +126,7 @@ func parseIntOrName(expr string, names map[string]uint) uint {
 	return mustParseInt(expr)
 }
 
+// mustParseInt parses the given expression as an int or panics.
 func mustParseInt(expr string) uint {
 	num, err := strconv.Atoi(expr)
 	if err != nil {
@@ -136,6 +139,7 @@ func mustParseInt(expr string) uint {
 	return uint(num)
 }
 
+// getBits sets all bits in the range [min, max], modulo the given step size.
 func getBits(min, max, step uint) uint64 {
 	var bits uint64
 
@@ -156,14 +160,18 @@ func getBits(min, max, step uint) uint64 {
 	return bits
 }
 
+// all returns all bits within the given bounds.  (plus the star bit)
 func all(r bounds) uint64 {
-	return getBits(r.min, r.max, 1) | STAR_BIT
+	return getBits(r.min, r.max, 1) | starBit
 }
 
+// first returns bits with only the first (minimum) value set.
 func first(r bounds) uint64 {
 	return getBits(r.min, r.min, 1)
 }
 
+// parseDescriptor returns a pre-defined schedule for the expression, or panics
+// if none matches.
 func parseDescriptor(spec string) *Schedule {
 	switch spec {
 	case "@yearly", "@annually":
