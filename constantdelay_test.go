@@ -17,7 +17,7 @@ func TestConstantDelayNext(t *testing.T) {
 		{"Mon Jul 9 14:59:59 2012", 15 * time.Minute, "Mon Jul 9 15:14:59 2012"},
 
 		// Wrap around hours
-		{"Mon Jul 9 14:45 2012", 35 * time.Minute, "Mon Jul 9 16:20 2012"},
+		{"Mon Jul 9 15:45 2012", 35 * time.Minute, "Mon Jul 9 16:20 2012"},
 
 		// Wrap around days
 		{"Mon Jul 9 23:46 2012", 14 * time.Minute, "Tue Jul 10 00:00 2012"},

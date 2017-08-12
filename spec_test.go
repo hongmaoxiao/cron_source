@@ -120,6 +120,7 @@ func TestNext(t *testing.T) {
 		}
 	}
 }
+
 func getTime(value string) time.Time {
 	if value == "" {
 		return time.Time{}
