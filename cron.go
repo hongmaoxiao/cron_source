@@ -20,7 +20,7 @@ type Cron struct {
 	snapshot chan []*Entry
 	running  bool
 	ErrorLog *log.Logger
-	location time.Location
+	location *time.Location
 }
 
 // Job is an interface for submitted cron jobs.
@@ -157,7 +157,7 @@ func (c *Cron) runWithRecovery(j Job) {
 			const size = 64 << 10
 			buf := make([]byte, size)
 			buf = buf[:runtime.Stack(buf, false)]
-			c.logf("cron: panic runing job: %v\n%s", r, buf)
+			c.logf("cron: panic running job: %v\n%s", r, buf)
 		}
 	}()
 	j.Run()
@@ -210,7 +210,7 @@ func (c *Cron) run() {
 				fmt.Println("e.func", e.Job)
 				go c.runWithRecovery(e.Job)
 				e.Prev = e.Next
-				e.Next = e.Schedule.Next(effective)
+				e.Next = e.Schedule.Next(now)
 			}
 			continue
 
@@ -229,7 +229,7 @@ func (c *Cron) run() {
 		}
 
 		// 'now' should be updated after newEntry and snapshot cases.
-		now = time.Now().Local()
+		now = time.Now().In(c.location)
 	}
 }
 
