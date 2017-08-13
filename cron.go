@@ -210,7 +210,7 @@ func (c *Cron) run() {
 		case newEntry := <-c.add:
 			fmt.Println("in case add: ", newEntry)
 			c.entries = append(c.entries, newEntry)
-			newEntry.Next = newEntry.Schedule.Next(now)
+			newEntry.Next = newEntry.Schedule.Next(time.Now().Local())
 
 		case sn := <-c.snapshot:
 			fmt.Println("receive snapshot: ", sn)
