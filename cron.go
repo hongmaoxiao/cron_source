@@ -95,7 +95,7 @@ func (c *Cron) AddFunc(spec string, cmd func()) error {
 	return c.AddJob(spec, FuncJob(cmd))
 }
 
-// AddFunc adds a Job to the Cron to be run on the given schedule.
+// AddJob adds a Job to the Cron to be run on the given schedule.
 func (c *Cron) AddJob(spec string, cmd Job) error {
 	schedule, err := Parse(spec)
 	if err != nil {
@@ -139,6 +139,15 @@ func (c *Cron) Start() {
 	fmt.Println("cron start")
 	c.running = true
 	go c.run()
+}
+
+func (c *Cron) runWithRecovery(j Job) {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Cron function panicked:", r)
+		}
+	}()
+	j.Run()
 }
 
 // Run the scheduler.. this is private just due to the need to synchronize
@@ -186,7 +195,7 @@ func (c *Cron) run() {
 					break
 				}
 				fmt.Println("e.func", e.Job)
-				go e.Job.Run()
+				go c.runWithRecovery(e.Job)
 				e.Prev = e.Next
 				e.Next = e.Schedule.Next(effective)
 			}
