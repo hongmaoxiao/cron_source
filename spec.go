@@ -147,7 +147,7 @@ WRAP:
 		fmt.Println("in minute")
 		if !added {
 			added = true
-			t = t.Truncate((time.Minute))
+			t = t.Truncate(time.Minute)
 		}
 		t = t.Add(1 * time.Minute)
 		// fmt.Println("added minute", t)
@@ -165,7 +165,7 @@ WRAP:
 	for 1<<uint(t.Second())&s.Second == 0 {
 		if !added {
 			added = true
-			t = t.Truncate((time.Second))
+			t = t.Truncate(time.Second)
 		}
 		t = t.Add(1 * time.Second)
 		// fmt.Println("added second", t)
