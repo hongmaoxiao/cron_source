@@ -195,8 +195,9 @@ func (c *Cron) run() {
 			fmt.Println("next time: ", effective)
 		}
 
+		timer := time.NewTimer(effective.Sub(now))
 		select {
-		case now = <-time.After(effective.Sub(now)):
+		case now = <-timer.C:
 			// Run every entry whose next time was this effective time.
 			fmt.Println("arrival now: ", now)
 			fmt.Println("in effective: ", c.entries[0])
@@ -224,12 +225,14 @@ func (c *Cron) run() {
 			c.snapshot <- c.entrySnapshot()
 
 		case <-c.stop:
+			timer.Stop()
 			fmt.Println("in case stop")
 			return
 		}
 
 		// 'now' should be updated after newEntry and snapshot cases.
 		now = time.Now().In(c.location)
+		timer.Stop()
 	}
 }
 
