@@ -20,6 +20,7 @@ type Cron struct {
 	snapshot chan []*Entry
 	running  bool
 	ErrorLog *log.Logger
+	location time.Location
 }
 
 // Job is an interface for submitted cron jobs.
@@ -84,6 +85,7 @@ func New() *Cron {
 		snapshot: make(chan []*Entry),
 		running:  false,
 		ErrorLog: nil,
+		location: time.Now().Location(),
 	}
 }
 
@@ -137,6 +139,11 @@ func (c *Cron) Entries() []*Entry {
 	return c.entrySnapshot()
 }
 
+// SetLocations sets the time zone location
+func (c *Cron) SetLocation(location *time.Location) {
+	c.location = location
+}
+
 // Start the cron scheduler in its own go-routine.
 func (c *Cron) Start() {
 	fmt.Println("cron start")
@@ -160,7 +167,7 @@ func (c *Cron) runWithRecovery(j Job) {
 // access to the 'running' state variable.
 func (c *Cron) run() {
 	// Figure out the next activation times for each entry.
-	now := time.Now().Local()
+	now := time.Now().In(c.location)
 	fmt.Println("now: ", now)
 	fmt.Println("first entries: ", c.entries)
 	for _, entry := range c.entries {
