@@ -185,6 +185,8 @@ func (c *Cron) run() {
 				e.Prev = e.Next
 				e.Next = e.Schedule.Next(effective)
 			}
+			continue
+
 		case newEntry := <-c.add:
 			fmt.Println("in case add: ", newEntry)
 			c.entries = append(c.entries, newEntry)
@@ -198,6 +200,9 @@ func (c *Cron) run() {
 			fmt.Println("in case stop")
 			return
 		}
+
+		// 'now' should be updated after newEntry and snapshot cases.
+		now = time.Now().Local()
 	}
 }
 
