@@ -120,6 +120,9 @@ func getRange(expr string, r bounds) uint64 {
 	if start > end {
 		log.Panicf("Beginning of range (%d) beyond end of range (%d): %s", start, end, expr)
 	}
+	if step == 0 {
+		log.Panicf("Step of range should be a positive number: %s", expr)
+	}
 	// fmt.Println("extra_star: ", extra_star)
 	// fmt.Printf("min: %v, max: %v, step: %v\n\n ", start, end, step)
 
