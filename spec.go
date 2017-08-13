@@ -109,7 +109,7 @@ WRAP:
 		// fmt.Println("in day")
 		if !added {
 			added = true
-			t = time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
+			t.Truncate(time.Hour)
 		}
 		t = t.AddDate(0, 0, 1)
 		// fmt.Println("added day: ", t)
@@ -128,7 +128,7 @@ WRAP:
 		fmt.Println("in hour")
 		if !added {
 			added = true
-			t = time.Date(t.Year(), t.Month(), t.Day(), t.Hour(), 0, 0, 0, t.Location())
+			t.Truncate((time.Minute)
 		}
 		t = t.Add(1 * time.Hour)
 		fmt.Println("added hour", t)
@@ -147,7 +147,7 @@ WRAP:
 		fmt.Println("in minute")
 		if !added {
 			added = true
-			t = time.Date(t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), 0, 0, t.Location())
+			t.Truncate((time.Second)
 		}
 		t = t.Add(1 * time.Minute)
 		// fmt.Println("added minute", t)
