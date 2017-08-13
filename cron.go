@@ -101,7 +101,7 @@ func (c *Cron) AddJob(spec string, cmd Job) error {
 	if err != nil {
 		return err
 	}
-	c.Schedule(Parse(spec), cmd)
+	c.Schedule(schedule, cmd)
 	return nil
 }
 
