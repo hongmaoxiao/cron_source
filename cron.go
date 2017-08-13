@@ -139,13 +139,16 @@ func (c *Cron) Entries() []*Entry {
 	return c.entrySnapshot()
 }
 
-// SetLocation sets the time zone location
-func (c *Cron) SetLocation(location *time.Location) {
-	c.location = location
+// Location gets the time zone location
+func (c *Cron) Location() *time.Location {
+	return c.location
 }
 
-// Start the cron scheduler in its own go-routine.
+// Start the cron scheduler in its own go-routine, or no-op if already started.
 func (c *Cron) Start() {
+	if c.running {
+		return
+	}
 	fmt.Println("cron start")
 	c.running = true
 	go c.run()
