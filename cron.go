@@ -1,5 +1,3 @@
-// This library implements a cron spec parser and runner.  See the README for
-// more details.
 package cron
 
 import (
@@ -181,11 +179,11 @@ func (c *Cron) runWithRecovery(j Job) {
 	j.Run()
 }
 
-// Run the scheduler.. this is private just due to the need to synchronize
+// Run the scheduler. this is private just due to the need to synchronize
 // access to the 'running' state variable.
 func (c *Cron) run() {
 	// Figure out the next activation times for each entry.
-	now := time.Now().In(c.location)
+	now := c.now()
 	fmt.Println("now: ", now)
 	fmt.Println("first entries: ", c.entries)
 	for _, entry := range c.entries {
@@ -201,57 +199,54 @@ func (c *Cron) run() {
 		sort.Sort(byTime(c.entries))
 		fmt.Println("after sort: ", c.entries)
 
-		var effective time.Time
+		var timer *time.Timer
 		if len(c.entries) == 0 || c.entries[0].Next.IsZero() {
 			// If there are no entries yet, just sleep - it still handles new entries
 			// and stop requests.
 			fmt.Println("no entries")
-			effective = now.AddDate(10, 0, 0)
+			timer = time.NewTimer(100000 * time.Hour)
 		} else {
 			fmt.Println("entries 0: ", c.entries[0])
-			effective = c.entries[0].Next
-			fmt.Println("next time: ", effective)
+			timer = time.NewTimer(c.entries[0].Next.Sub(now))
+			fmt.Println("next time: ", timer)
 		}
 
-		timer := time.NewTimer(effective.Sub(now))
-		select {
-		case now = <-timer.C:
-			now = now.In(c.location)
-			// Run every entry whose next time was this effective time.
-			fmt.Println("arrival now: ", now)
-			fmt.Println("in effective: ", c.entries[0])
-			for _, e := range c.entries {
-				fmt.Println("e.Next: ", e.Next)
-				fmt.Println("effective: ", effective)
-				if e.Next != effective {
-					fmt.Println("not equare")
-					break
+		for {
+			select {
+			case now = <-timer.C:
+				now = now.In(c.location)
+				// Run every entry whose next time was this effective time.
+				fmt.Println("arrival now: ", now)
+				fmt.Println("in effective: ", c.entries[0])
+				for _, e := range c.entries {
+					fmt.Println("e.Next: ", e.Next)
+					if e.Next.After(now) || e.Next.IsZero() {
+						break
+					}
+					fmt.Println("e.func", e.Job)
+					go c.runWithRecovery(e.Job)
+					e.Prev = e.Next
+					e.Next = e.Schedule.Next(now)
 				}
-				fmt.Println("e.func", e.Job)
-				go c.runWithRecovery(e.Job)
-				e.Prev = e.Next
-				e.Next = e.Schedule.Next(now)
+
+			case newEntry := <-c.add:
+				fmt.Println("in case add: ", newEntry)
+				newEntry.Next = newEntry.Schedule.Next(now)
+				c.entries = append(c.entries, newEntry)
+
+			case sn := <-c.snapshot:
+				fmt.Println("receive snapshot: ", sn)
+				c.snapshot <- c.entrySnapshot()
+				continue
+
+			case <-c.stop:
+				timer.Stop()
+				fmt.Println("in case stop")
+				return
 			}
-			continue
 
-		case newEntry := <-c.add:
-			fmt.Println("in case add: ", newEntry)
-			c.entries = append(c.entries, newEntry)
-			newEntry.Next = newEntry.Schedule.Next(time.Now().In(c.location))
-
-		case sn := <-c.snapshot:
-			fmt.Println("receive snapshot: ", sn)
-			c.snapshot <- c.entrySnapshot()
-
-		case <-c.stop:
-			timer.Stop()
-			fmt.Println("in case stop")
-			return
+			break
 		}
-
-		// 'now' should be updated after newEntry and snapshot cases.
-		now = time.Now().In(c.location)
-		timer.Stop()
 	}
 }
 
@@ -286,4 +281,9 @@ func (c *Cron) entrySnapshot() []*Entry {
 		})
 	}
 	return entries
+}
+
+// now returns current time in c location
+func (c *Cron) now() time.Time {
+	return time.Now().In(c.location)
 }
