@@ -215,7 +215,7 @@ func (c *Cron) run() {
 			select {
 			case now = <-timer.C:
 				now = now.In(c.location)
-				// Run every entry whose next time was this effective time.
+				// Run every entry whose next time was less than now
 				fmt.Println("arrival now: ", now)
 				fmt.Println("in effective: ", c.entries[0])
 				for _, e := range c.entries {
@@ -231,6 +231,8 @@ func (c *Cron) run() {
 
 			case newEntry := <-c.add:
 				fmt.Println("in case add: ", newEntry)
+				timer.Stop()
+				now = c.now()
 				newEntry.Next = newEntry.Schedule.Next(now)
 				c.entries = append(c.entries, newEntry)
 
