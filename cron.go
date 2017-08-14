@@ -28,6 +28,7 @@ type Job interface {
 	Run()
 }
 
+// The Schedule describes a job's duty cycle.
 type Schedule interface {
 	// Return the next activation time, later than the given time.
 	// Next is invoked initially, and then each time the job is run.
@@ -76,8 +77,13 @@ func (s byTime) Less(i, j int) bool {
 	return s[i].Next.Before(s[j].Next)
 }
 
-// New returns a new Cron job runner.
+// New returns a new Cron job runner, in the Local time zone.
 func New() *Cron {
+	return NewWithLocation(time.Now().Location())
+}
+
+// NewWithLocation returns a new Cron job runner.
+func NewWithLocation(location *time.Location) *Cron {
 	return &Cron{
 		entries:  nil,
 		add:      make(chan *Entry),
@@ -85,7 +91,7 @@ func New() *Cron {
 		snapshot: make(chan []*Entry),
 		running:  false,
 		ErrorLog: nil,
-		location: time.Now().Location(),
+		location: location,
 	}
 }
 
@@ -221,7 +227,7 @@ func (c *Cron) run() {
 		case newEntry := <-c.add:
 			fmt.Println("in case add: ", newEntry)
 			c.entries = append(c.entries, newEntry)
-			newEntry.Next = newEntry.Schedule.Next(time.Now().Local())
+			newEntry.Next = newEntry.Schedule.Next(time.Now().In(c.location))
 
 		case sn := <-c.snapshot:
 			fmt.Println("receive snapshot: ", sn)
