@@ -207,6 +207,7 @@ func (c *Cron) run() {
 		timer := time.NewTimer(effective.Sub(now))
 		select {
 		case now = <-timer.C:
+			now = now.In(c.location)
 			// Run every entry whose next time was this effective time.
 			fmt.Println("arrival now: ", now)
 			fmt.Println("in effective: ", c.entries[0])
