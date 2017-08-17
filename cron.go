@@ -247,6 +247,7 @@ func (c *Cron) run() {
 				return
 			}
 
+			fmt.Println("break inner for loop")
 			break
 		}
 	}
